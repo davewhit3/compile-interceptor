@@ -592,7 +592,8 @@ func (c *Client) Do(req *Request) (*Response, error) {
 	start := time.Now()
 	resp, err := c.do(req)
 	duration := time.Since(start)
-	fmt.Println("duration", duration)
+
+	fmt.Printf("[%s] [code=%d] [time=%v] url: %s\n", req.Method, resp.StatusCode, duration, req.URL.String())
 
 	return resp, err
 }

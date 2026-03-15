@@ -14,6 +14,4 @@ func main() {
 		return
 	}
 	defer resp.Body.Close()
-
-	fmt.Println("Response:", resp.StatusCode)
 }
