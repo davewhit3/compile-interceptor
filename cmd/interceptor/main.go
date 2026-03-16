@@ -59,8 +59,6 @@ func main() {
 		//ignore
 	}
 
-	log.Info("transformer", "transformer", transformer)
-
 	if transformer != nil {
 		log.Info("transformer found", "args", toolArgs)
 
