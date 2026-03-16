@@ -190,8 +190,8 @@ func (t *transformer) AddImports() {
 func (t *transformer) Do(args []string) ([]string, error) {
 	filesToCompile, idx, _ := compile.ExtractFilesFromPack(args)
 	for i, file := range filesToCompile {
-		t.logger.Info("processing file", "file", file, "sourceFile", t.SourceFile)
 		if strings.HasSuffix(file, t.SourceFile) {
+			t.logger.Info("processing file", "file", file, "sourceFile", t.SourceFile)
 			t.workDir = compile.DeriveWorkDir(args)
 
 			t.logger.Info("loading code for file", "file", file)
