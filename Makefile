@@ -2,9 +2,11 @@ SERVICE_NAME = interceptor
 TEST_SERVICE_NAME = example
 DIST_DIR = dist
 MAIN_FILE = cmd/interceptor/main.go
-TEST_MAIN_FILE = example/main.go
+TEST_HTTP_MAIN_FILE = example/http/main.go
+TEST_VALKEY_MAIN_FILE = example/valkey/main.go
 TESTDATA_DIR = testdata
 COMPILER = /opt/homebrew/opt/go/libexec/pkg/tool/darwin_arm64/compile
+
 run:
 	@go run ${MAIN_FILE}
 
@@ -29,7 +31,7 @@ build: clean
 
 test:
 	@echo "Testing '${SERVICE_NAME}'..."
-	@go build -work -toolexec '${PWD}/${DIST_DIR}/${SERVICE_NAME}' -o "${DIST_DIR}/${TEST_SERVICE_NAME}" ${TEST_MAIN_FILE}
+	@go build -work -toolexec '${PWD}/${DIST_DIR}/${SERVICE_NAME}' -o "${DIST_DIR}/${TEST_SERVICE_NAME}" ${TEST_VALKEY_MAIN_FILE}
 	
 
 local: export WORK = ${PWD}/${TESTDATA_DIR}

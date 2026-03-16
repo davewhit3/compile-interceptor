@@ -8,9 +8,10 @@ var templateHttpSourceCode string
 func init() {
 	Register(&httpTransformer{
 		transformer: &transformer{
-			SourceFile:   "net/http/client.go",
-			TemplateCode: templateHttpSourceCode,
-			TargetFunc:   "Do",
+			SourcePackage: "net/http",
+			SourceFile:    "net/http/client.go",
+			TemplateCode:  templateHttpSourceCode,
+			TargetFunc:    "Do",
 		},
 	})
 }

@@ -48,15 +48,16 @@ func (m *Manager) Find(importPath string) (Transform, error) {
 
 // transformer is a struct that contains the imports and code to be transformed
 type transformer struct {
-	workDir      string
-	logger       *slog.Logger
-	SourceCode   string
-	SourceFile   string
-	TemplateCode string
-	TargetFunc   string
-	Imports      []string
-	Code         *dst.File
-	Template     *dst.File
+	workDir       string
+	logger        *slog.Logger
+	SourcePackage string
+	SourceCode    string
+	SourceFile    string
+	TemplateCode  string
+	TargetFunc    string
+	Imports       []string
+	Code          *dst.File
+	Template      *dst.File
 }
 
 func (t *transformer) Init(logger *slog.Logger) {
@@ -122,13 +123,14 @@ func (t *transformer) Transform() error {
 		}
 	}
 
-	t.AddImport()
+	t.AddImports()
 
 	return nil
 }
 
 func (t *transformer) SaveModFile(file string) (string, error) {
-	mf := t.workDir + "/" + strings.TrimRight(filepath.Base(file), ".go") + "_mod.go"
+	replacer := strings.NewReplacer("/", "_", ".", "_")
+	mf := t.workDir + "/" + replacer.Replace(t.SourcePackage) + "_" + strings.TrimRight(filepath.Base(file), ".go") + "_mod.go"
 
 	t.logger.Info("workdir", "file", mf)
 
@@ -149,37 +151,39 @@ func (t *transformer) SaveModFile(file string) (string, error) {
 	return tf.Name(), nil
 }
 
-func (t *transformer) AddImport() {
-	newImport := &dst.ImportSpec{
-		Path: &dst.BasicLit{
-			Kind:  token.STRING,
-			Value: outgoingImport,
-		},
-	}
-	newImport.Decs.Before = dst.NewLine
-	newImport.Decs.After = dst.NewLine
-
-	t.Code.Imports = append(t.Code.Imports, newImport)
-
-	inserted := false
-	for _, decl := range t.Code.Decls {
-		genDecl, ok := decl.(*dst.GenDecl)
-		if ok && genDecl.Tok == token.IMPORT {
-			genDecl.Specs = append(genDecl.Specs, newImport)
-			inserted = true
-			break
+func (t *transformer) AddImports() {
+	for _, imp := range append(t.Imports, outgoingImport) {
+		newImport := &dst.ImportSpec{
+			Path: &dst.BasicLit{
+				Kind:  token.STRING,
+				Value: imp,
+			},
 		}
-	}
+		newImport.Decs.Before = dst.NewLine
+		newImport.Decs.After = dst.NewLine
 
-	if !inserted {
-		newDecl := &dst.GenDecl{
-			Tok:    token.IMPORT,
-			Specs:  []dst.Spec{newImport},
-			Lparen: true,
-			Rparen: true,
+		t.Code.Imports = append(t.Code.Imports, newImport)
+
+		inserted := false
+		for _, decl := range t.Code.Decls {
+			genDecl, ok := decl.(*dst.GenDecl)
+			if ok && genDecl.Tok == token.IMPORT {
+				genDecl.Specs = append(genDecl.Specs, newImport)
+				inserted = true
+				break
+			}
 		}
 
-		t.Code.Decls = append([]dst.Decl{newDecl}, t.Code.Decls...)
+		if !inserted {
+			newDecl := &dst.GenDecl{
+				Tok:    token.IMPORT,
+				Specs:  []dst.Spec{newImport},
+				Lparen: true,
+				Rparen: true,
+			}
+
+			t.Code.Decls = append([]dst.Decl{newDecl}, t.Code.Decls...)
+		}
 	}
 }
 
@@ -252,4 +256,8 @@ func (t *transformer) injectOutgoingDep(args []string) error {
 	}
 
 	return nil
+}
+
+func (t *transformer) Support(importPath string) bool {
+	return importPath == t.SourcePackage
 }

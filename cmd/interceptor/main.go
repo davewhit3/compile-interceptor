@@ -11,6 +11,7 @@ import (
 	"github.com/davewhit3/compile-interceptor/transform"
 
 	_ "github.com/davewhit3/compile-interceptor/outgoing"
+	_ "github.com/valkey-io/valkey-go"
 )
 
 func main() {
@@ -58,7 +59,11 @@ func main() {
 		//ignore
 	}
 
+	log.Info("transformer", "transformer", transformer)
+
 	if transformer != nil {
+		log.Info("transformer found", "args", toolArgs)
+
 		transformer.Init(log)
 		pkgArgs, err := transformer.Do(toolArgs)
 		if err != nil {
