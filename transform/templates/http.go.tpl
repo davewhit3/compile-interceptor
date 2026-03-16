@@ -6,8 +6,6 @@ func (c *Client) Do(req *Request) (*Response, error) {
 	duration := time.Since(start);
 
 	outgoing.Add(fmt.Sprintf("%s %d %v %s\n", req.Method, resp.StatusCode, duration, req.URL.String()))
-	
-	fmt.Printf("%s %d %v %s\n", req.Method, resp.StatusCode, duration, req.URL.String())
 
 	return resp, err
 }

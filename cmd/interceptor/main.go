@@ -9,6 +9,8 @@ import (
 
 	"github.com/davewhit3/compile-interceptor/compile"
 	"github.com/davewhit3/compile-interceptor/transform"
+
+	_ "github.com/davewhit3/compile-interceptor/outgoing"
 )
 
 func main() {

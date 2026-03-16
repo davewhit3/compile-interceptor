@@ -26,6 +26,7 @@ build: clean
 	@chmod +x "${DIST_DIR}/${SERVICE_NAME}"
 	@echo "Dist: ${DIST_DIR}/${SERVICE_NAME}"
 
+
 test:
 	@echo "Testing '${SERVICE_NAME}'..."
 	@go build -work -toolexec '${PWD}/${DIST_DIR}/${SERVICE_NAME}' -o "${DIST_DIR}/${TEST_SERVICE_NAME}" ${TEST_MAIN_FILE}

@@ -11,6 +11,8 @@ import (
 	"github.com/davewhit3/compile-interceptor/outgoing"
 )
 
+var ctr = 0
+
 func main() {
 	fmt.Println("Hello, World!")
 	done := make(chan os.Signal)
@@ -18,10 +20,12 @@ func main() {
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		timer := time.NewTicker(500 * time.Millisecond)
+		timer := time.NewTicker(100 * time.Millisecond)
 		for {
 			select {
 			case <-timer.C:
+				ctr++
+				fmt.Println("ctr", ctr)
 				httpReq()
 			case <-stopChan:
 				timer.Stop()
@@ -49,16 +53,15 @@ func main() {
 }
 
 func outgoingRequest(w http.ResponseWriter, r *http.Request) {
-	for _, url := range outgoing.Get() {
+	for _, url := range outgoing.List() {
 		fmt.Fprintf(w, "%s\n", url)
 	}
-	fmt.Fprintf(w, "-----\n")
-
+	fmt.Fprintf(w, "------\n")
 }
 
 func httpReq() {
 	fmt.Println("Making request")
-	resp, err := http.Get(fmt.Sprintf("https://tvn24.pl?unicorn=%d", time.Now().UnixNano()))
+	resp, err := http.Get(fmt.Sprintf("https://tvn24.pl?zzz=%d", time.Now().UnixNano()))
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
