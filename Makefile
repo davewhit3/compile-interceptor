@@ -35,7 +35,7 @@ local: export WORK = ${PWD}/${TESTDATA_DIR}
 local: export TOOLEXEC_IMPORTPATH = net/http
 local:
 	@${PWD}/${DIST_DIR}/${SERVICE_NAME} \
-	${COMPILER} -o '$$WORK/b061/_pkg_.a' -trimpath '$$WORK/b061=>' -p net/http \
+	${COMPILER} -o $$WORK/b062/_pkg_.a -trimpath $$WORK/b062=> -p net/http \
 	-lang=go1.26 -std -complete -buildid jqQFaCrtiZzSFoy6ICEi/jqQFaCrtiZzSFoy6ICEi \
 	-goversion go1.26.0 -c=12 -shared -nolocalimports \
-	-importcfg '$$WORK/b061/importcfg' -pack /opt/homebrew/opt/go/libexec/src/net/http/client.go
+	-importcfg $$WORK/b062/importcfg -pack /opt/homebrew/opt/go/libexec/src/net/http/client.go
