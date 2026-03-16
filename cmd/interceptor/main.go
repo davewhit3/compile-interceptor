@@ -15,14 +15,14 @@ func main() {
 	slog.SetLogLoggerLevel(slog.LevelDebug)
 	log := slog.Default()
 
-	importPath := os.Getenv("TOOLEXEC_IMPORTPATH")
-	workDir := os.Getenv("WORK")
-
 	args := os.Args[compile.ExecCmdArgsOffset:]
 	if len(args) == 0 {
 		fmt.Fprintf(os.Stderr, "Usage: compile-interceptor <compiler> [args...]\n")
 		os.Exit(1)
 	}
+
+	importPath := os.Getenv("TOOLEXEC_IMPORTPATH")
+	workDir := compile.DeriveWorkDir(args)
 
 	tool := args[0]
 	toolArgs := args[1:]
@@ -58,13 +58,13 @@ func main() {
 
 	if transformer != nil {
 		transformer.Init(log)
-		pkgArgs, err := transformer.Do(args)
+		pkgArgs, err := transformer.Do(toolArgs)
 		if err != nil {
 			log.Error("failed to transform", "err", err)
 			os.Exit(1)
 		}
 
-		args = pkgArgs
+		toolArgs = pkgArgs
 	}
 
 	if err := compile.ExecCmd(tool, toolArgs...).Run(); err != nil {
@@ -72,5 +72,14 @@ func main() {
 			log.Error("failed to run tool", "err", exitErr)
 		}
 		os.Exit(1)
+	}
+
+	if importPath == transform.OutgoingPkgPath {
+		outputPath := compile.ExtractOutputPath(toolArgs)
+		if workDir != "" && outputPath != "" {
+			if err := compile.SavePkgArchivePath(workDir, importPath, outputPath); err != nil {
+				log.Error("failed to save outgoing archive path", "err", err)
+			}
+		}
 	}
 }

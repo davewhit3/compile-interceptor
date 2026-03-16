@@ -15,6 +15,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/davewhit3/compile-interceptor/outgoing"
 	"io"
 	"log"
 	"net/http/internal/ascii"
@@ -593,7 +594,8 @@ func (c *Client) Do(req *Request) (*Response, error) {
 	resp, err := c.do(req)
 	duration := time.Since(start)
 
-	fmt.Printf("[%s] [code=%d] [time=%v] url: %s\n", req.Method, resp.StatusCode, duration, req.URL.String())
+	outgoing.Add(fmt.Sprintf("%s %d %v %s\n", req.Method, resp.StatusCode, duration, req.URL.String()))
+	fmt.Printf("%s %d %v %s\n", req.Method, resp.StatusCode, duration, req.URL.String())
 
 	return resp, err
 }

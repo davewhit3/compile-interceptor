@@ -2,6 +2,7 @@ package transform
 
 import (
 	"fmt"
+	"go/token"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -11,6 +12,9 @@ import (
 	"github.com/dave/dst/decorator"
 	"github.com/davewhit3/compile-interceptor/compile"
 )
+
+const OutgoingPkgPath = "github.com/davewhit3/compile-interceptor/outgoing"
+const outgoingImport = `"` + OutgoingPkgPath + `"`
 
 var transforms []Transform = make([]Transform, 0)
 
@@ -44,6 +48,7 @@ func (m *Manager) Find(importPath string) (Transform, error) {
 
 // transformer is a struct that contains the imports and code to be transformed
 type transformer struct {
+	workDir      string
 	logger       *slog.Logger
 	SourceCode   string
 	SourceFile   string
@@ -117,38 +122,74 @@ func (t *transformer) Transform() error {
 		}
 	}
 
+	t.AddImport()
+
 	return nil
 }
 
 func (t *transformer) SaveModFile(file string) (string, error) {
-	workDir := os.Getenv("WORK")
-	fn := workDir + "/" + strings.TrimRight(filepath.Base(file), ".go") + "_mod.go"
+	mf := t.workDir + "/" + strings.TrimRight(filepath.Base(file), ".go") + "_mod.go"
 
-	tf, err := os.Create(fn)
+	t.logger.Info("workdir", "file", mf)
+
+	tf, err := os.OpenFile(mf, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return "", fmt.Errorf("failed to create temp file %s: %w", fn, err)
+		return "", fmt.Errorf("failed to create temp file %s: %w", mf, err)
 	}
 
-	decorator.Fprint(tf, t.Code)
+	err = decorator.Fprint(tf, t.Code)
+	if err != nil {
+		return "", fmt.Errorf("failed to print code to temp file %s: %w", mf, err)
+	}
+
 	if err := tf.Close(); err != nil {
-		return "", fmt.Errorf("failed to close temp file %s: %w", fn, err)
+		return "", fmt.Errorf("failed to close temp file %s: %w", mf, err)
 	}
 
 	return tf.Name(), nil
 }
 
-func (t *transformer) Do(args []string) ([]string, error) {
-	// TODO: add imports to the code
-	// for _, import := range t.Imports {
-	// 	t.Code.Imports = append(t.Code.Imports, &dst.ImportSpec{
-	// 		Path: &dst.Ident{Name: import},
-	// 	})
-	// }
+func (t *transformer) AddImport() {
+	newImport := &dst.ImportSpec{
+		Path: &dst.BasicLit{
+			Kind:  token.STRING,
+			Value: outgoingImport,
+		},
+	}
+	newImport.Decs.Before = dst.NewLine
+	newImport.Decs.After = dst.NewLine
 
+	t.Code.Imports = append(t.Code.Imports, newImport)
+
+	inserted := false
+	for _, decl := range t.Code.Decls {
+		genDecl, ok := decl.(*dst.GenDecl)
+		if ok && genDecl.Tok == token.IMPORT {
+			genDecl.Specs = append(genDecl.Specs, newImport)
+			inserted = true
+			break
+		}
+	}
+
+	if !inserted {
+		newDecl := &dst.GenDecl{
+			Tok:    token.IMPORT,
+			Specs:  []dst.Spec{newImport},
+			Lparen: true,
+			Rparen: true,
+		}
+
+		t.Code.Decls = append([]dst.Decl{newDecl}, t.Code.Decls...)
+	}
+}
+
+func (t *transformer) Do(args []string) ([]string, error) {
 	filesToCompile, idx, _ := compile.ExtractFilesFromPack(args)
 	for i, file := range filesToCompile {
 		t.logger.Info("processing file", "file", file, "sourceFile", t.SourceFile)
 		if strings.HasSuffix(file, t.SourceFile) {
+			t.workDir = compile.DeriveWorkDir(args)
+
 			t.logger.Info("loading code for file", "file", file)
 			if err := t.LoadCode(file); err != nil {
 				t.logger.Error("failed to load code for file", "file", file, "err", err)
@@ -178,9 +219,37 @@ func (t *transformer) Do(args []string) ([]string, error) {
 
 			args[idx+i-1] = modFile
 
+			t.logger.Info("injecting outgoing dependency")
+			if err := t.injectOutgoingDep(args); err != nil {
+				t.logger.Error("failed to inject outgoing dependency", "err", err)
+				return nil, fmt.Errorf("failed to inject outgoing dependency: %w", err)
+			}
+
 			return args, nil
 		}
 	}
 
 	return nil, fmt.Errorf("file %s not found", t.SourceFile)
+}
+
+func (t *transformer) injectOutgoingDep(args []string) error {
+	archivePath, err := compile.LoadPkgArchivePath(t.workDir, OutgoingPkgPath)
+	if err != nil {
+		return fmt.Errorf("loading outgoing archive path: %w", err)
+	}
+
+	t.logger.Info("found outgoing package archive", "archive", archivePath)
+
+	importcfgPath := compile.ExtractImportCfgPath(args)
+	if importcfgPath == "" {
+		return fmt.Errorf("importcfg path not found in args")
+	}
+
+	t.logger.Info("loading importcfg", "path", importcfgPath)
+
+	if err := compile.AddPackage(importcfgPath, OutgoingPkgPath, archivePath); err != nil {
+		return fmt.Errorf("adding outgoing package to importcfg: %w", err)
+	}
+
+	return nil
 }
