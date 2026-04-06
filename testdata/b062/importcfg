@@ -50,3 +50,4 @@ packagefile sync/atomic=/var/folders/t_/4fkt30y13yv03gdsrkfmwqkm0000gn/T/go-buil
 packagefile time=/var/folders/t_/4fkt30y13yv03gdsrkfmwqkm0000gn/T/go-build3087908084/b053/_pkg_.a
 packagefile unicode=/var/folders/t_/4fkt30y13yv03gdsrkfmwqkm0000gn/T/go-build3087908084/b045/_pkg_.a
 packagefile unicode/utf8=/var/folders/t_/4fkt30y13yv03gdsrkfmwqkm0000gn/T/go-build3087908084/b040/_pkg_.a
+packagefile github.com/davewhit3/compile-interceptor/outgoing=/var/folders/t_/4fkt30y13yv03gdsrkfmwqkm0000gn/T/go-build4228510492/b061/_pkg_.a

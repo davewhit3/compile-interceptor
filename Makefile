@@ -22,17 +22,24 @@ coverage:
 clean:
 	@rm -rf ${DIST_DIR}/
 
-build: clean
+build:
 	@echo "Building '${SERVICE_NAME}'..."
 	@go build -o "${DIST_DIR}/${SERVICE_NAME}" ${MAIN_FILE}
 	@chmod +x "${DIST_DIR}/${SERVICE_NAME}"
 	@echo "Dist: ${DIST_DIR}/${SERVICE_NAME}"
 
 
-test:
-	@echo "Testing '${SERVICE_NAME}'..."
+test-valkey: build
+	@echo "Building valkey module with '${SERVICE_NAME}'..."
 	@go build -work -toolexec '${PWD}/${DIST_DIR}/${SERVICE_NAME}' -o "${DIST_DIR}/${TEST_SERVICE_NAME}" ${TEST_VALKEY_MAIN_FILE}
-	
+	@echo "--------------------------------"
+	@echo "Run binary: ${DIST_DIR}/${TEST_SERVICE_NAME}"
+
+test-http: build
+	@echo "Building http module test with '${SERVICE_NAME}'..."
+	@go build -work -toolexec '${PWD}/${DIST_DIR}/${SERVICE_NAME}' -o "${DIST_DIR}/${TEST_SERVICE_NAME}" ${TEST_HTTP_MAIN_FILE}
+	@echo "--------------------------------"
+	@echo "Run binary: ${DIST_DIR}/${TEST_SERVICE_NAME}"
 
 local: export WORK = ${PWD}/${TESTDATA_DIR}
 local: export TOOLEXEC_IMPORTPATH = net/http

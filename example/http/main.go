@@ -20,7 +20,7 @@ func main() {
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		timer := time.NewTicker(100 * time.Millisecond)
+		timer := time.NewTicker(1 * time.Second)
 		for {
 			select {
 			case <-timer.C:

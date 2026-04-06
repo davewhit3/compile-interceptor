@@ -8,16 +8,17 @@ import (
 	"path/filepath"
 
 	"github.com/davewhit3/compile-interceptor/compile"
+	"github.com/davewhit3/compile-interceptor/outgoing"
 	"github.com/davewhit3/compile-interceptor/transform"
 
 	_ "net/http"
 
 	_ "github.com/valkey-io/valkey-go"
-
-	_ "github.com/davewhit3/compile-interceptor/outgoing"
 )
 
 func main() {
+	compile.InjectedDepsHash = outgoing.SourceHash
+
 	slog.SetLogLoggerLevel(slog.LevelDebug)
 	log := slog.Default()
 

@@ -12,6 +12,12 @@ import (
 
 var (
 	hasher = sha256.New()
+
+	// InjectedDepsHash should be set by the main package at startup to a
+	// content hash of the injected dependency sources (e.g. outgoing). It is
+	// mixed into the tool version so that Go's build cache is invalidated
+	// whenever the injected dependency changes.
+	InjectedDepsHash string
 )
 
 const buildIDHashLength = 15
@@ -76,9 +82,6 @@ func AlterToolVersion(tool string, args []string) error {
 }
 
 func addToolToHash(execPath string, inputHash []byte) ([sha256.Size]byte, error) {
-	// Join the two content IDs together into a single base64-encoded sha256
-	// sum. This includes the original tool's content ID, and tool's own
-	// content ID.
 	hasher.Reset()
 	hasher.Write(inputHash)
 
@@ -88,6 +91,10 @@ func addToolToHash(execPath string, inputHash []byte) ([sha256.Size]byte, error)
 	}
 
 	hasher.Write([]byte(toolID))
+
+	if InjectedDepsHash != "" {
+		hasher.Write([]byte(InjectedDepsHash))
+	}
 
 	// addToolToHash returns the sum buffer, so we need a new copy.
 	// Otherwise the next use of the global sumBuffer would conflict.
