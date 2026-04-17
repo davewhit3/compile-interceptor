@@ -12,6 +12,7 @@ func init() {
 			SourceFile:    "net/http/client.go",
 			TemplateCode:  templateHttpSourceCode,
 			TargetFunc:    "Do",
+			Imports:       []string{`"bytes"`},
 		},
 	})
 }
