@@ -6,6 +6,7 @@ TEST_HTTP_MAIN_FILE = example/http/main.go
 TEST_VALKEY_MAIN_FILE = example/valkey/main.go
 TESTDATA_DIR = testdata
 COMPILER = /opt/homebrew/opt/go/libexec/pkg/tool/darwin_arm64/compile
+INTERCEPTOR_LOG_LEVEL ?= info
 
 run:
 	@go run ${MAIN_FILE}
@@ -24,20 +25,20 @@ clean:
 
 build:
 	@echo "Building '${SERVICE_NAME}'..."
-	@go build -o "${DIST_DIR}/${SERVICE_NAME}" ${MAIN_FILE}
+	INTERCEPTOR_LOG_LEVEL=${INTERCEPTOR_LOG_LEVEL} go build -o "${DIST_DIR}/${SERVICE_NAME}" ${MAIN_FILE}
 	@chmod +x "${DIST_DIR}/${SERVICE_NAME}"
 	@echo "Dist: ${DIST_DIR}/${SERVICE_NAME}"
 
 
 test-valkey: build
 	@echo "Building valkey module with '${SERVICE_NAME}'..."
-	@go build -work -toolexec '${PWD}/${DIST_DIR}/${SERVICE_NAME}' -o "${DIST_DIR}/${TEST_SERVICE_NAME}" ${TEST_VALKEY_MAIN_FILE}
+	INTERCEPTOR_LOG_LEVEL=${INTERCEPTOR_LOG_LEVEL} go build -work -toolexec '${PWD}/${DIST_DIR}/${SERVICE_NAME}' -o "${DIST_DIR}/${TEST_SERVICE_NAME}" ${TEST_VALKEY_MAIN_FILE}
 	@echo "--------------------------------"
 	@echo "Run binary: ${DIST_DIR}/${TEST_SERVICE_NAME}"
 
 test-http: build
 	@echo "Building http module test with '${SERVICE_NAME}'..."
-	@go build -work -toolexec '${PWD}/${DIST_DIR}/${SERVICE_NAME}' -o "${DIST_DIR}/${TEST_SERVICE_NAME}" ${TEST_HTTP_MAIN_FILE}
+	INTERCEPTOR_LOG_LEVEL=${INTERCEPTOR_LOG_LEVEL} go build -work -toolexec '${PWD}/${DIST_DIR}/${SERVICE_NAME}' -o "${DIST_DIR}/${TEST_SERVICE_NAME}" ${TEST_HTTP_MAIN_FILE}
 	@echo "--------------------------------"
 	@echo "Run binary: ${DIST_DIR}/${TEST_SERVICE_NAME}"
 

@@ -19,7 +19,11 @@ import (
 func main() {
 	compile.InjectedDepsHash = outgoing.SourceHash
 
-	slog.SetLogLoggerLevel(slog.LevelDebug)
+	level := slog.LevelInfo
+	if v := os.Getenv("INTERCEPTOR_LOG_LEVEL"); v != "" {
+		_ = level.UnmarshalText([]byte(v))
+	}
+	slog.SetLogLoggerLevel(level)
 	log := slog.Default()
 
 	args := os.Args[compile.ExecCmdArgsOffset:]

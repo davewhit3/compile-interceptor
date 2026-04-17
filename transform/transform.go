@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strings"
 	"regexp"
+	"strings"
 
 	"github.com/dave/dst"
 	"github.com/dave/dst/decorator"
@@ -49,17 +49,17 @@ func (m *Manager) Find(importPath string) (Transform, error) {
 
 // transformer is a struct that contains the imports and code to be transformed
 type transformer struct {
-	workDir       string
-	logger        *slog.Logger
-	SourcePackage string
-	SourceCode    string
-	SourceFile    string
+	workDir           string
+	logger            *slog.Logger
+	SourcePackage     string
+	SourceCode        string
+	SourceFile        string
 	SourceFilePattern *regexp.Regexp
-	TemplateCode  string
-	TargetFunc    string
-	Imports       []string
-	Code          *dst.File
-	Template      *dst.File
+	TemplateCode      string
+	TargetFunc        string
+	Imports           []string
+	Code              *dst.File
+	Template          *dst.File
 }
 
 func (t *transformer) Init(logger *slog.Logger) {
@@ -134,7 +134,7 @@ func (t *transformer) SaveModFile(file string) (string, error) {
 	replacer := strings.NewReplacer("/", "_", ".", "_")
 	mf := t.workDir + "/" + replacer.Replace(t.SourcePackage) + "_" + strings.TrimRight(filepath.Base(file), ".go") + "_mod.go"
 
-	t.logger.Info("workdir", "file", mf)
+	t.logger.Debug("writing mod file", "file", mf)
 
 	tf, err := os.OpenFile(mf, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -192,63 +192,52 @@ func (t *transformer) AddImports() {
 func (t *transformer) Do(args []string) ([]string, error) {
 	filesToCompile, idx, _ := compile.ExtractFilesFromPack(args)
 	for i, file := range filesToCompile {
-				matched := false
+		matched := false
 		if t.SourceFilePattern != nil {
 			matched = t.SourceFilePattern.MatchString(file)
-			t.logger.Debug("pattern matching", "pattern", t.SourceFilePattern.String(), "file", file, "matched", matched)
 		} else {
 			matched = strings.HasSuffix(file, t.SourceFile)
 		}
 
 		if matched {
-
-			t.logger.Info("processing file", "file", file, "sourceFile", t.SourceFile)
+			t.logger.Debug("processing file", "file", file, "sourceFile", t.SourceFile)
 			t.workDir = compile.DeriveWorkDir(args)
 
-			// Check if outgoing package is available BEFORE transformation
-			t.logger.Info("checking outgoing dependency availability")
-			archivePath, err := compile.LoadPkgArchivePath(t.workDir, OutgoingPkgPath)
+			// Go compiles sibling dependencies in parallel, so outgoing may
+			// not be compiled by the outer build yet when we reach this
+			// point. Build it ourselves (idempotent, flock-guarded) so the
+			// injected import resolves during this compile pass.
+			archivePath, err := compile.EnsureOutgoingArchive(t.workDir, OutgoingPkgPath)
 			if err != nil {
-				t.logger.Error("outgoing package not available yet", "err", err)
-				t.logger.Info("skipping transformation - package will be transformed later when outgoing is available")
-				// Don't transform if outgoing is not available yet
-				// This happens when net/http is compiled before our code that imports outgoing
-				return args, nil
+				return nil, fmt.Errorf("ensuring outgoing archive: %w", err)
 			}
-			t.logger.Info("outgoing package is available", "archive", archivePath)
+			t.logger.Debug("outgoing archive ready", "archive", archivePath)
 
-			t.logger.Info("loading code for file", "file", file)
+			t.logger.Debug("loading code for file", "file", file)
 			if err := t.LoadCode(file); err != nil {
-				t.logger.Error("failed to load code for file", "file", file, "err", err)
 				return nil, fmt.Errorf("failed to load code for file %s: %w", file, err)
 			}
 
-			t.logger.Info("loading template")
+			t.logger.Debug("loading template")
 			if err := t.LoadTemplate(); err != nil {
-				t.logger.Error("failed to load template for file", "err", err)
 				return nil, fmt.Errorf("failed to load template: %w", err)
 			}
 
-			t.logger.Info("transforming file", "file", file)
+			t.logger.Debug("transforming file", "file", file)
 			if err := t.Transform(); err != nil {
-				t.logger.Error("failed to transform file", "file", file, "err", err)
 				return nil, fmt.Errorf("failed to transform file %s: %w", file, err)
 			}
 
-			t.logger.Debug("saving mod file", "file", file)
 			modFile, err := t.SaveModFile(file)
 			if err != nil {
-				t.logger.Error("failed to save mod file for file", "file", file, "err", err)
 				return nil, fmt.Errorf("failed to save mod file for file %s: %w", file, err)
 			}
 
-			t.logger.Info("saved mod file", "file", file, "modFile", modFile)
+			t.logger.Info("transformed", "file", file, "modFile", modFile)
 
 			args[idx+i-1] = modFile
 
-			t.logger.Info("injecting outgoing dependency")
 			if err := t.injectOutgoingDep(args); err != nil {
-				t.logger.Error("failed to inject outgoing dependency", "err", err)
 				return nil, fmt.Errorf("failed to inject outgoing dependency: %w", err)
 			}
 
@@ -265,14 +254,12 @@ func (t *transformer) injectOutgoingDep(args []string) error {
 		return fmt.Errorf("loading outgoing archive path: %w", err)
 	}
 
-	t.logger.Info("found outgoing package archive", "archive", archivePath)
-
 	importcfgPath := compile.ExtractImportCfgPath(args)
 	if importcfgPath == "" {
 		return fmt.Errorf("importcfg path not found in args")
 	}
 
-	t.logger.Info("loading importcfg", "path", importcfgPath)
+	t.logger.Debug("injecting outgoing into importcfg", "archive", archivePath, "importcfg", importcfgPath)
 
 	if err := compile.AddPackage(importcfgPath, OutgoingPkgPath, archivePath); err != nil {
 		return fmt.Errorf("adding outgoing package to importcfg: %w", err)
