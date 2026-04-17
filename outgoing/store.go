@@ -13,6 +13,10 @@ var (
 )
 
 func init() {
+	createStore()
+}
+
+func createStore() {
 	outgoingStore = make([]string, 0, outgoingStoreMaxSize)
 	outgoingStoreCursor = 0
 }
@@ -46,4 +50,10 @@ func List() []string {
 	}
 
 	return result
+}
+
+func Reset() {
+	outgoingStoreMutex.Lock()
+	defer outgoingStoreMutex.Unlock()
+	createStore()
 }
