@@ -194,6 +194,18 @@ func (t *transformer) Do(args []string) ([]string, error) {
 			t.logger.Info("processing file", "file", file, "sourceFile", t.SourceFile)
 			t.workDir = compile.DeriveWorkDir(args)
 
+			// Check if outgoing package is available BEFORE transformation
+			t.logger.Info("checking outgoing dependency availability")
+			archivePath, err := compile.LoadPkgArchivePath(t.workDir, OutgoingPkgPath)
+			if err != nil {
+				t.logger.Error("outgoing package not available yet", "err", err)
+				t.logger.Info("skipping transformation - package will be transformed later when outgoing is available")
+				// Don't transform if outgoing is not available yet
+				// This happens when net/http is compiled before our code that imports outgoing
+				return args, nil
+			}
+			t.logger.Info("outgoing package is available", "archive", archivePath)
+
 			t.logger.Info("loading code for file", "file", file)
 			if err := t.LoadCode(file); err != nil {
 				t.logger.Error("failed to load code for file", "file", file, "err", err)
