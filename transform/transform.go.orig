@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"regexp"
 
 	"github.com/dave/dst"
 	"github.com/dave/dst/decorator"
@@ -54,7 +53,6 @@ type transformer struct {
 	SourcePackage string
 	SourceCode    string
 	SourceFile    string
-	SourceFilePattern *regexp.Regexp
 	TemplateCode  string
 	TargetFunc    string
 	Imports       []string
@@ -192,16 +190,7 @@ func (t *transformer) AddImports() {
 func (t *transformer) Do(args []string) ([]string, error) {
 	filesToCompile, idx, _ := compile.ExtractFilesFromPack(args)
 	for i, file := range filesToCompile {
-				matched := false
-		if t.SourceFilePattern != nil {
-			matched = t.SourceFilePattern.MatchString(file)
-			t.logger.Debug("pattern matching", "pattern", t.SourceFilePattern.String(), "file", file, "matched", matched)
-		} else {
-			matched = strings.HasSuffix(file, t.SourceFile)
-		}
-
-		if matched {
-
+		if strings.HasSuffix(file, t.SourceFile) {
 			t.logger.Info("processing file", "file", file, "sourceFile", t.SourceFile)
 			t.workDir = compile.DeriveWorkDir(args)
 
