@@ -3,6 +3,10 @@ package http
 func (c *Client) Do(req *Request) (*Response, error) {
 	start := time.Now();
 	var code = -1;
+
+	bodyBytes, _ := io.ReadAll(req.Body)
+	req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
 	resp, err := c.do(req);
 	duration := time.Since(start);
 
@@ -25,9 +29,6 @@ func (c *Client) Do(req *Request) (*Response, error) {
 	}
 
     if isPrintable {
-        bodyBytes, _ := io.ReadAll(req.Body)
-        req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
         sb.WriteString(fmt.Sprintf("body=%s", string(bodyBytes)))
     }
 

@@ -7,7 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dave/dst"
 	"github.com/dave/dst/decorator"
@@ -132,7 +134,7 @@ func (t *transformer) Transform() error {
 
 func (t *transformer) SaveModFile(file string) (string, error) {
 	replacer := strings.NewReplacer("/", "_", ".", "_")
-	mf := t.workDir + "/" + replacer.Replace(t.SourcePackage) + "_" + strings.TrimRight(filepath.Base(file), ".go") + "_mod.go"
+	mf := t.workDir + "/" + replacer.Replace(t.SourcePackage) + "_" + strings.TrimRight(filepath.Base(file), ".go") + "_" + strconv.FormatInt(time.Now().UnixNano(), 10) + "_mod.go"
 
 	t.logger.Debug("writing mod file", "file", mf)
 
