@@ -8,14 +8,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/davewhit3/compile-interceptor/outgoing"
+	"github.com/davewhit3/compile-interceptor/dashboard"
 )
 
 var ctr = 0
 
 func main() {
 	fmt.Println("Hello, World!")
-	done := make(chan os.Signal)
+	done := make(chan os.Signal, 1)
 	stopChan := make(chan struct{})
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
 
@@ -33,15 +33,14 @@ func main() {
 		}
 	}()
 
-	http.HandleFunc("/", outgoingRequest)
+	mux := http.NewServeMux()
+	dashboard.Register(mux)
 
 	go func() {
-		fmt.Println("Starting server")
-		err := http.ListenAndServe(":8080", nil)
-		fmt.Println("Server stopped")
+		fmt.Println("Starting server on :8080 — open http://localhost:8080/telescope")
+		err := http.ListenAndServe(":8080", mux)
 		if err != nil {
-			fmt.Println("Error:", err)
-			return
+			fmt.Println("Server error:", err)
 		}
 	}()
 
@@ -50,13 +49,6 @@ func main() {
 	fmt.Println("Signal received")
 	stopChan <- struct{}{}
 	fmt.Println("Stopping server")
-}
-
-func outgoingRequest(w http.ResponseWriter, r *http.Request) {
-	for _, url := range outgoing.List() {
-		fmt.Fprintf(w, "%s\n", url)
-	}
-	fmt.Fprintf(w, "------\n")
 }
 
 func httpReq() {
