@@ -19,6 +19,7 @@ import (
 const OutgoingPkgPath = "github.com/davewhit3/compile-interceptor/outgoing"
 const outgoingImport = `"` + OutgoingPkgPath + `"`
 
+
 var transforms []Transform = make([]Transform, 0)
 
 type Transform interface {
@@ -60,8 +61,27 @@ type transformer struct {
 	TemplateCode      string
 	TargetFunc        string
 	Imports           []string
-	Code              *dst.File
-	Template          *dst.File
+	// InjectedPkg overrides the default outgoing package that is injected into
+	// the transformed file. When empty, OutgoingPkgPath is used.
+	InjectedPkg string
+	Code        *dst.File
+	Template    *dst.File
+}
+
+// injectedPkgPath returns the import path of the package that will be injected.
+func (t *transformer) injectedPkgPath() string {
+	if t.InjectedPkg != "" {
+		return t.InjectedPkg
+	}
+	return OutgoingPkgPath
+}
+
+// injectedPkgImport returns the quoted import string for the injected package.
+func (t *transformer) injectedPkgImport() string {
+	if t.InjectedPkg != "" {
+		return `"` + t.InjectedPkg + `"`
+	}
+	return outgoingImport
 }
 
 func (t *transformer) Init(logger *slog.Logger) {
@@ -156,7 +176,7 @@ func (t *transformer) SaveModFile(file string) (string, error) {
 }
 
 func (t *transformer) AddImports() {
-	for _, imp := range append(t.Imports, outgoingImport) {
+	for _, imp := range append(t.Imports, t.injectedPkgImport()) {
 		newImport := &dst.ImportSpec{
 			Path: &dst.BasicLit{
 				Kind:  token.STRING,
@@ -205,11 +225,11 @@ func (t *transformer) Do(args []string) ([]string, error) {
 			t.logger.Debug("processing file", "file", file, "sourceFile", t.SourceFile)
 			t.workDir = compile.DeriveWorkDir(args)
 
-			// Go compiles sibling dependencies in parallel, so outgoing may
-			// not be compiled by the outer build yet when we reach this
-			// point. Build it ourselves (idempotent, flock-guarded) so the
-			// injected import resolves during this compile pass.
-			archivePath, err := compile.EnsureOutgoingArchive(t.workDir, OutgoingPkgPath)
+			// Go compiles sibling dependencies in parallel, so the injected
+			// package may not be compiled by the outer build yet. Build it
+			// ourselves (idempotent, flock-guarded) so the injected import
+			// resolves during this compile pass.
+			archivePath, err := compile.EnsurePkgArchive(t.workDir, t.injectedPkgPath())
 			if err != nil {
 				return nil, fmt.Errorf("ensuring outgoing archive: %w", err)
 			}
@@ -239,8 +259,8 @@ func (t *transformer) Do(args []string) ([]string, error) {
 
 			args[idx+i-1] = modFile
 
-			if err := t.injectOutgoingDep(args); err != nil {
-				return nil, fmt.Errorf("failed to inject outgoing dependency: %w", err)
+			if err := t.injectPkgDep(args, t.injectedPkgPath()); err != nil {
+				return nil, fmt.Errorf("failed to inject %s dependency: %w", t.injectedPkgPath(), err)
 			}
 
 			return args, nil
@@ -250,10 +270,10 @@ func (t *transformer) Do(args []string) ([]string, error) {
 	return nil, fmt.Errorf("file %s not found", t.SourceFile)
 }
 
-func (t *transformer) injectOutgoingDep(args []string) error {
-	archivePath, err := compile.LoadPkgArchivePath(t.workDir, OutgoingPkgPath)
+func (t *transformer) injectPkgDep(args []string, pkgPath string) error {
+	archivePath, err := compile.LoadPkgArchivePath(t.workDir, pkgPath)
 	if err != nil {
-		return fmt.Errorf("loading outgoing archive path: %w", err)
+		return fmt.Errorf("loading archive path for %s: %w", pkgPath, err)
 	}
 
 	importcfgPath := compile.ExtractImportCfgPath(args)
@@ -261,13 +281,18 @@ func (t *transformer) injectOutgoingDep(args []string) error {
 		return fmt.Errorf("importcfg path not found in args")
 	}
 
-	t.logger.Debug("injecting outgoing into importcfg", "archive", archivePath, "importcfg", importcfgPath)
+	t.logger.Debug("injecting pkg into importcfg", "pkg", pkgPath, "archive", archivePath, "importcfg", importcfgPath)
 
-	if err := compile.AddPackage(importcfgPath, OutgoingPkgPath, archivePath); err != nil {
-		return fmt.Errorf("adding outgoing package to importcfg: %w", err)
+	if err := compile.AddPackage(importcfgPath, pkgPath, archivePath); err != nil {
+		return fmt.Errorf("adding %s to importcfg: %w", pkgPath, err)
 	}
 
 	return nil
+}
+
+// injectOutgoingDep is kept for backward compatibility.
+func (t *transformer) injectOutgoingDep(args []string) error {
+	return t.injectPkgDep(args, OutgoingPkgPath)
 }
 
 func (t *transformer) Support(importPath string) bool {

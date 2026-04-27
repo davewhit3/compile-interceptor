@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Telescope — Outgoing Requests</title>
+  <title>Telescope</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -12,118 +12,172 @@
       background: #0f1117;
       color: #e2e8f0;
       min-height: 100vh;
+      overflow: hidden;
     }
 
+    /* ── header ────────────────────────────────────────── */
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 24px;
+      padding: 14px 24px;
       background: #161b27;
       border-bottom: 1px solid #2d3748;
     }
 
     .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 18px;
-      font-weight: 700;
-      color: #a78bfa;
-      letter-spacing: 0.04em;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 17px; font-weight: 700;
+      color: #a78bfa; letter-spacing: 0.04em;
     }
 
-    .logo svg { flex-shrink: 0; }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+    .header-right { display: flex; align-items: center; gap: 12px; }
 
     .badge-count {
-      background: #312e81;
-      color: #c4b5fd;
-      border-radius: 12px;
-      padding: 2px 10px;
-      font-size: 12px;
+      background: #312e81; color: #c4b5fd;
+      border-radius: 12px; padding: 2px 10px; font-size: 12px;
     }
 
     #status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #22c55e;
-      transition: background 0.3s;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #22c55e; transition: background 0.3s;
     }
     #status-dot.stale { background: #f59e0b; }
 
     button.clear-btn {
-      background: #1e293b;
-      color: #f87171;
-      border: 1px solid #374151;
-      border-radius: 6px;
-      padding: 5px 14px;
-      font-size: 13px;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background 0.15s;
+      background: #1e293b; color: #f87171;
+      border: 1px solid #374151; border-radius: 6px;
+      padding: 5px 14px; font-size: 13px; cursor: pointer;
+      font-family: inherit; transition: background 0.15s;
     }
     button.clear-btn:hover { background: #2d1a1a; border-color: #f87171; }
 
-    main { display: flex; height: calc(100vh - 57px); overflow: hidden; }
+    /* ── tabs ───────────────────────────────────────────── */
+    .tabs {
+      display: flex; background: #161b27;
+      border-bottom: 1px solid #2d3748; padding: 0 24px;
+    }
+
+    .tab-btn {
+      background: none; border: none;
+      border-bottom: 3px solid transparent;
+      color: #64748b; font-family: inherit;
+      font-size: 13px; font-weight: 600;
+      padding: 10px 18px 8px; cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: color 0.15s, border-color 0.15s;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .tab-btn:hover { color: #e2e8f0; }
+    .tab-btn.active { color: #a78bfa; border-bottom-color: #a78bfa; }
+
+    .tab-pill {
+      background: #1e293b; color: #94a3b8;
+      border-radius: 10px; padding: 1px 7px; font-size: 11px;
+    }
+    .tab-btn.active .tab-pill { background: #312e81; color: #c4b5fd; }
+
+    /* ── main layout ────────────────────────────────────── */
+    main {
+      display: flex;
+      height: calc(100vh - 103px);
+      overflow: hidden;
+      position: relative;
+    }
 
     .table-panel {
-      flex: 1;
+      flex: 1 1 auto;
       overflow-y: auto;
-      border-right: 1px solid #2d3748;
+      min-width: 200px;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
+    /* ── resize handle ──────────────────────────────────── */
+    .resize-handle {
+      width: 5px;
+      flex: 0 0 5px;
+      background: #2d3748;
+      cursor: col-resize;
+      transition: background 0.15s;
+      position: relative;
+      z-index: 10;
     }
+    .resize-handle:hover,
+    .resize-handle.dragging { background: #a78bfa; }
+
+    /* ── detail panel ───────────────────────────────────── */
+    .detail-panel {
+      flex: 0 0 480px;
+      width: 480px;
+      overflow: hidden;
+      background: #0d1321;
+      display: flex;
+      flex-direction: column;
+    }
+    .detail-panel.hidden {
+      flex: 0 0 0;
+      width: 0;
+    }
+
+    .detail-header {
+      padding: 14px 18px 10px;
+      border-bottom: 1px solid #2d3748;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .detail-title { font-size: 13px; font-weight: 700; color: #a78bfa; }
+    .close-btn {
+      background: none; border: none; color: #64748b;
+      cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px;
+    }
+    .close-btn:hover { color: #e2e8f0; }
+
+    .detail-scroll { overflow-y: auto; flex: 1; }
+    .detail-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; }
+
+    .detail-row { display: flex; flex-direction: column; gap: 3px; }
+    .detail-label {
+      font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #64748b;
+    }
+    .detail-value { font-size: 13px; color: #e2e8f0; word-break: break-all; }
+
+    .detail-code {
+      background: #161b27; border: 1px solid #2d3748; border-radius: 6px;
+      padding: 10px 12px; font-size: 12px; color: #a5b4fc;
+      white-space: pre-wrap; word-break: break-all;
+      max-height: 280px; overflow-y: auto;
+    }
+    .detail-code.response { color: #86efac; }
+
+    /* ── table shared ───────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
     thead th {
-      position: sticky;
-      top: 0;
-      background: #161b27;
-      color: #94a3b8;
-      text-align: left;
-      padding: 10px 14px;
+      position: sticky; top: 0;
+      background: #161b27; color: #94a3b8;
+      text-align: left; padding: 10px 14px;
       border-bottom: 1px solid #2d3748;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      font-size: 11px;
-      white-space: nowrap;
+      font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; font-size: 11px; white-space: nowrap;
     }
 
     tbody tr {
       border-bottom: 1px solid #1e293b;
-      cursor: pointer;
-      transition: background 0.1s;
+      cursor: pointer; transition: background 0.1s;
     }
-    tbody tr:hover { background: #1a2235; }
+    tbody tr:hover   { background: #1a2235; }
     tbody tr.selected { background: #1e2d4a !important; }
 
     td {
-      padding: 9px 14px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 360px;
-      vertical-align: middle;
+      padding: 9px 14px; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+      max-width: 360px; vertical-align: middle;
     }
 
+    /* ── badges ─────────────────────────────────────────── */
     .method-badge {
-      display: inline-block;
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
+      display: inline-block; padding: 2px 7px; border-radius: 4px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
     }
     .method-GET    { background: #052e16; color: #4ade80; }
     .method-POST   { background: #1c1917; color: #fb923c; }
@@ -134,11 +188,8 @@
     .method-OTHER  { background: #1e293b; color: #94a3b8; }
 
     .status-badge {
-      display: inline-block;
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 600;
+      display: inline-block; padding: 2px 7px; border-radius: 4px;
+      font-size: 12px; font-weight: 600;
     }
     .status-1xx { background: #1e293b; color: #94a3b8; }
     .status-2xx { background: #052e16; color: #4ade80; }
@@ -147,74 +198,30 @@
     .status-5xx { background: #2d1a1a; color: #f87171; }
     .status-neg { background: #2d2a0a; color: #facc15; }
 
+    .cmd-badge {
+      display: inline-block; padding: 2px 7px; border-radius: 4px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+      background: #1e293b; color: #7dd3fc;
+    }
+    .cmd-badge.write  { background: #1c1917; color: #fb923c; }
+    .cmd-badge.delete { background: #2d0a0a; color: #f87171; }
+    .cmd-badge.err    { background: #2d1a1a; color: #f87171; }
+
     .dur { color: #94a3b8; }
-    .dur.slow { color: #f87171; }
+    .dur.slow   { color: #f87171; }
     .dur.medium { color: #fb923c; }
 
-    .ts { color: #64748b; font-size: 11px; }
-
+    .ts       { color: #64748b; font-size: 11px; }
     .url-cell { color: #bae6fd; }
+    .key-cell { color: #bae6fd; }
+    .err-cell { color: #f87171; font-size: 12px; }
 
-    /* Detail panel */
-    .detail-panel {
-      width: 480px;
-      min-width: 280px;
-      overflow-y: auto;
-      background: #0d1321;
-      display: flex;
-      flex-direction: column;
-      transition: width 0.2s;
-    }
-    .detail-panel.hidden { width: 0; min-width: 0; overflow: hidden; }
-
-    .detail-header {
-      padding: 14px 18px 10px;
-      border-bottom: 1px solid #2d3748;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
-    .detail-title { font-size: 13px; font-weight: 700; color: #a78bfa; }
-    .close-btn {
-      background: none;
-      border: none;
-      color: #64748b;
-      cursor: pointer;
-      font-size: 18px;
-      line-height: 1;
-      padding: 0 4px;
-    }
-    .close-btn:hover { color: #e2e8f0; }
-
-    .detail-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; }
-
-    .detail-row { display: flex; flex-direction: column; gap: 3px; }
-    .detail-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; }
-    .detail-value { font-size: 13px; color: #e2e8f0; word-break: break-all; }
-
-    .detail-body-text {
-      background: #161b27;
-      border: 1px solid #2d3748;
-      border-radius: 6px;
-      padding: 10px 12px;
-      font-size: 12px;
-      color: #a5b4fc;
-      white-space: pre-wrap;
-      word-break: break-all;
-      max-height: 320px;
-      overflow-y: auto;
-    }
-
+    /* ── empty state ─────────────────────────────────────── */
     .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      padding: 60px 20px;
-      color: #475569;
-      font-size: 14px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 10px; padding: 60px 20px;
+      color: #475569; font-size: 14px;
     }
     .empty-state svg { opacity: 0.4; }
 
@@ -224,70 +231,171 @@
   </style>
 </head>
 <body>
+
 <header>
   <div class="logo">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
     </svg>
     Telescope
   </div>
   <div class="header-right">
     <span id="status-dot" title="Live"></span>
-    <span class="badge-count" id="count-badge">0 requests</span>
+    <span class="badge-count" id="count-badge">0</span>
     <button class="clear-btn" id="clear-btn">Clear</button>
   </div>
 </header>
-<main>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="http">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+    </svg>
+    HTTP Requests
+    <span class="tab-pill" id="http-pill">0</span>
+  </button>
+  <button class="tab-btn" data-tab="cache">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="12" cy="5" rx="9" ry="3"/>
+      <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+      <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+    </svg>
+    Cache
+    <span class="tab-pill" id="cache-pill">0</span>
+  </button>
+</div>
+
+<main id="main">
   <div class="table-panel" id="table-panel">
-    <table id="requests-table">
-      <thead>
-        <tr>
-          <th>Time</th>
-          <th>Method</th>
-          <th>URL</th>
-          <th>Status</th>
-          <th>Duration</th>
-        </tr>
-      </thead>
-      <tbody id="requests-body"></tbody>
-    </table>
-    <div class="empty-state" id="empty-state" style="display:none">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      No outgoing requests captured yet.
+
+    <!-- HTTP tab -->
+    <div id="tab-http">
+      <table id="http-table">
+        <thead>
+          <tr><th>Time</th><th>Method</th><th>URL</th><th>Status</th><th>Duration</th></tr>
+        </thead>
+        <tbody id="http-body"></tbody>
+      </table>
+      <div class="empty-state" id="http-empty" style="display:none">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+        No outgoing HTTP requests captured yet.
+      </div>
     </div>
+
+    <!-- Cache tab -->
+    <div id="tab-cache" style="display:none">
+      <table id="cache-table">
+        <thead>
+          <tr><th>Time</th><th>Command</th><th>Key</th><th>Duration</th><th>Error</th></tr>
+        </thead>
+        <tbody id="cache-body"></tbody>
+      </table>
+      <div class="empty-state" id="cache-empty" style="display:none">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="12" cy="5" rx="9" ry="3"/>
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+        </svg>
+        No cache commands captured yet.
+      </div>
+    </div>
+
   </div>
+
+  <!-- drag handle — only visible when detail panel is open -->
+  <div class="resize-handle hidden" id="resize-handle"></div>
+
   <div class="detail-panel hidden" id="detail-panel">
     <div class="detail-header">
-      <span class="detail-title">Request Detail</span>
-      <button class="close-btn" id="close-detail" title="Close">&#x2715;</button>
+      <span class="detail-title" id="detail-title">Detail</span>
+      <button class="close-btn" id="close-detail">&#x2715;</button>
     </div>
-    <div class="detail-body" id="detail-body"></div>
+    <div class="detail-scroll">
+      <div class="detail-body" id="detail-body"></div>
+    </div>
   </div>
 </main>
 
 <script>
-  const API = '/telescope/api/requests';
-  let entries = [];
-  let selectedId = null;
-  let lastFetch = 0;
+  const HTTP_API  = '/telescope/api/requests';
+  const CACHE_API = '/telescope/api/cache';
 
-  const tbody = document.getElementById('requests-body');
+  let httpEntries   = [];
+  let cacheEntries  = [];
+  let activeTab     = 'http';
+  let selectedId    = null;
+  let lastFetch     = 0;
+
+  const httpBody    = document.getElementById('http-body');
+  const cacheBody   = document.getElementById('cache-body');
   const detailPanel = document.getElementById('detail-panel');
-  const detailBody = document.getElementById('detail-body');
-  const countBadge = document.getElementById('count-badge');
-  const statusDot = document.getElementById('status-dot');
-  const emptyState = document.getElementById('empty-state');
+  const detailBody  = document.getElementById('detail-body');
+  const detailTitle = document.getElementById('detail-title');
+  const countBadge  = document.getElementById('count-badge');
+  const statusDot   = document.getElementById('status-dot');
+  const httpPill    = document.getElementById('http-pill');
+  const cachePill   = document.getElementById('cache-pill');
+  const resizeHandle = document.getElementById('resize-handle');
+  const mainEl      = document.getElementById('main');
 
+  // ── resize logic ──────────────────────────────────────────────
+  let isResizing = false;
+  let resizeStartX = 0;
+  let resizeStartW = 0;
+  const MIN_DETAIL_W = 200;
+
+  resizeHandle.addEventListener('mousedown', e => {
+    isResizing = true;
+    resizeStartX = e.clientX;
+    resizeStartW = detailPanel.offsetWidth;
+    resizeHandle.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!isResizing) return;
+    const delta = resizeStartX - e.clientX;          // drag left → wider
+    const newW  = Math.max(MIN_DETAIL_W, resizeStartW + delta);
+    const maxW  = mainEl.offsetWidth - 300;
+    detailPanel.style.flexBasis = Math.min(newW, maxW) + 'px';
+    detailPanel.style.width     = Math.min(newW, maxW) + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!isResizing) return;
+    isResizing = false;
+    resizeHandle.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+
+  function openDetail() {
+    detailPanel.classList.remove('hidden');
+    resizeHandle.classList.remove('hidden');
+  }
+
+  function closeDetail() {
+    selectedId = null;
+    detailPanel.classList.add('hidden');
+    resizeHandle.classList.add('hidden');
+    if (activeTab === 'http')  renderHttp();
+    if (activeTab === 'cache') renderCache();
+  }
+
+  // ── helpers ───────────────────────────────────────────────────
   function methodClass(m) {
     const k = (m || '').toUpperCase();
-    const map = { GET:'GET', POST:'POST', PUT:'PUT', PATCH:'PATCH', DELETE:'DELETE', HEAD:'HEAD' };
-    return map[k] || 'OTHER';
+    return ['GET','POST','PUT','PATCH','DELETE','HEAD'].includes(k) ? k : 'OTHER';
   }
 
   function statusClass(code) {
-    if (code < 0) return 'status-neg';
+    if (code < 0)   return 'status-neg';
     if (code < 200) return 'status-1xx';
     if (code < 300) return 'status-2xx';
     if (code < 400) return 'status-3xx';
@@ -295,133 +403,197 @@
     return 'status-5xx';
   }
 
+  const WRITE_CMDS  = new Set(['SET','SETEX','PSETEX','SETNX','MSET','MSETNX','HMSET','HSET','LPUSH','RPUSH','SADD','ZADD','INCR','DECR','INCRBY','DECRBY','APPEND','GETSET','SETRANGE']);
+  const DELETE_CMDS = new Set(['DEL','UNLINK','HDEL','LREM','SREM','ZREM','EXPIRE','PERSIST','PEXPIRE','EXPIREAT','PEXPIREAT']);
+
+  function cmdClass(cmd, errStr) {
+    if (errStr) return 'err';
+    const k = (cmd || '').toUpperCase();
+    if (WRITE_CMDS.has(k))  return 'write';
+    if (DELETE_CMDS.has(k)) return 'delete';
+    return '';
+  }
+
   function durClass(ms) {
     if (ms > 2000) return 'slow';
-    if (ms > 500) return 'medium';
+    if (ms > 500)  return 'medium';
     return '';
   }
 
   function fmtTime(ts) {
     const d = new Date(ts);
-    const pad = n => String(n).padStart(2, '0');
-    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${String(d.getMilliseconds()).padStart(3,'0')}`;
+    const p = n => String(n).padStart(2,'0');
+    return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.${String(d.getMilliseconds()).padStart(3,'0')}`;
   }
 
-  function fmtBody(body) {
+  function fmtCode(body) {
     if (!body) return '(empty)';
-    try {
-      return JSON.stringify(JSON.parse(body), null, 2);
-    } catch (_) {
-      return body;
-    }
-  }
-
-  function renderTable() {
-    const frag = document.createDocumentFragment();
-
-    entries.forEach(e => {
-      const tr = document.createElement('tr');
-      tr.dataset.id = e.id;
-      if (e.id === selectedId) tr.classList.add('selected');
-
-      tr.innerHTML = `
-        <td class="ts">${fmtTime(e.timestamp)}</td>
-        <td><span class="method-badge method-${methodClass(e.method)}">${e.method || '?'}</span></td>
-        <td class="url-cell" title="${e.url}">${e.url}</td>
-        <td><span class="status-badge ${statusClass(e.status_code)}">${e.status_code < 0 ? 'ERR' : e.status_code}</span></td>
-        <td class="dur ${durClass(e.duration_ms)}">${e.duration_ms} ms</td>
-      `;
-
-      tr.addEventListener('click', () => selectEntry(e.id));
-      frag.appendChild(tr);
-    });
-
-    tbody.innerHTML = '';
-    tbody.appendChild(frag);
-
-    const total = entries.length;
-    countBadge.textContent = `${total} request${total !== 1 ? 's' : ''}`;
-    emptyState.style.display = total === 0 ? 'flex' : 'none';
-    document.getElementById('requests-table').style.display = total === 0 ? 'none' : '';
-  }
-
-  function selectEntry(id) {
-    selectedId = id;
-    const e = entries.find(x => x.id === id);
-    renderTable();
-
-    if (!e) { closeDetail(); return; }
-
-    detailPanel.classList.remove('hidden');
-    detailBody.innerHTML = `
-      <div class="detail-row">
-        <span class="detail-label">ID</span>
-        <span class="detail-value">${e.id}</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">Timestamp</span>
-        <span class="detail-value">${new Date(e.timestamp).toISOString()}</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">Method</span>
-        <span class="detail-value"><span class="method-badge method-${methodClass(e.method)}">${e.method}</span></span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">URL</span>
-        <span class="detail-value">${e.url}</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">Status</span>
-        <span class="detail-value"><span class="status-badge ${statusClass(e.status_code)}">${e.status_code < 0 ? 'Error' : e.status_code}</span></span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">Duration</span>
-        <span class="detail-value dur ${durClass(e.duration_ms)}">${e.duration_ms} ms</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">Request Body</span>
-        <pre class="detail-body-text">${escHtml(fmtBody(e.body))}</pre>
-      </div>
-    `;
-  }
-
-  function closeDetail() {
-    selectedId = null;
-    detailPanel.classList.add('hidden');
-    renderTable();
+    try { return JSON.stringify(JSON.parse(body), null, 2); }
+    catch (_) { return body; }
   }
 
   function escHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  async function fetchEntries() {
+  function detailRow(label, valueHtml) {
+    return `<div class="detail-row">
+      <span class="detail-label">${label}</span>
+      <span class="detail-value">${valueHtml}</span>
+    </div>`;
+  }
+
+  function detailCode(label, text, extraClass = '') {
+    return `<div class="detail-row">
+      <span class="detail-label">${label}</span>
+      <pre class="detail-code ${extraClass}">${escHtml(fmtCode(text))}</pre>
+    </div>`;
+  }
+
+  // ── tab switching ─────────────────────────────────────────────
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeTab = btn.dataset.tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      document.getElementById('tab-http').style.display  = activeTab === 'http'  ? '' : 'none';
+      document.getElementById('tab-cache').style.display = activeTab === 'cache' ? '' : 'none';
+      closeDetail();
+      updateBadge();
+    });
+  });
+
+  function updateBadge() {
+    const n = activeTab === 'http' ? httpEntries.length : cacheEntries.length;
+    countBadge.textContent = `${n} ${activeTab === 'http' ? 'request' : 'command'}${n !== 1 ? 's' : ''}`;
+  }
+
+  // ── HTTP table ────────────────────────────────────────────────
+  function renderHttp() {
+    const frag = document.createDocumentFragment();
+    httpEntries.forEach(e => {
+      const tr = document.createElement('tr');
+      tr.dataset.id = e.id;
+      if (e.id === selectedId && activeTab === 'http') tr.classList.add('selected');
+      tr.innerHTML = `
+        <td class="ts">${fmtTime(e.timestamp)}</td>
+        <td><span class="method-badge method-${methodClass(e.method)}">${escHtml(e.method || '?')}</span></td>
+        <td class="url-cell" title="${escHtml(e.url)}">${escHtml(e.url)}</td>
+        <td><span class="status-badge ${statusClass(e.status_code)}">${e.status_code < 0 ? 'ERR' : e.status_code}</span></td>
+        <td class="dur ${durClass(e.duration_ms)}">${e.duration_ms} ms</td>
+      `;
+      tr.addEventListener('click', () => selectHttpEntry(e.id));
+      frag.appendChild(tr);
+    });
+    httpBody.innerHTML = '';
+    httpBody.appendChild(frag);
+    const n = httpEntries.length;
+    httpPill.textContent = n;
+    document.getElementById('http-table').style.display = n === 0 ? 'none' : '';
+    document.getElementById('http-empty').style.display = n === 0 ? 'flex'  : 'none';
+  }
+
+  function selectHttpEntry(id) {
+    selectedId = id;
+    const e = httpEntries.find(x => x.id === id);
+    renderHttp();
+    if (!e) { closeDetail(); return; }
+
+    detailTitle.textContent = 'HTTP Request';
+    detailBody.innerHTML =
+      detailRow('ID', escHtml(e.id)) +
+      detailRow('Timestamp', new Date(e.timestamp).toISOString()) +
+      detailRow('Method', `<span class="method-badge method-${methodClass(e.method)}">${escHtml(e.method)}</span>`) +
+      detailRow('URL', `<span class="url-cell">${escHtml(e.url)}</span>`) +
+      detailRow('Status', `<span class="status-badge ${statusClass(e.status_code)}">${e.status_code < 0 ? 'Error' : e.status_code}</span>`) +
+      detailRow('Duration', `<span class="dur ${durClass(e.duration_ms)}">${e.duration_ms} ms</span>`) +
+      detailCode('Request Body', e.body) +
+      detailCode('Response Body', e.response_body, 'response');
+
+    openDetail();
+  }
+
+  // ── Cache table ───────────────────────────────────────────────
+  function renderCache() {
+    const frag = document.createDocumentFragment();
+    cacheEntries.forEach(e => {
+      const tr = document.createElement('tr');
+      tr.dataset.id = e.id;
+      if (e.id === selectedId && activeTab === 'cache') tr.classList.add('selected');
+      const cc = cmdClass(e.command, e.error);
+      tr.innerHTML = `
+        <td class="ts">${fmtTime(e.timestamp)}</td>
+        <td><span class="cmd-badge ${cc}">${escHtml(e.command || '?')}</span></td>
+        <td class="key-cell" title="${escHtml(e.key)}">${escHtml(e.key)}</td>
+        <td class="dur ${durClass(e.duration_ms)}">${e.duration_ms} ms</td>
+        <td class="err-cell">${escHtml(e.error)}</td>
+      `;
+      tr.addEventListener('click', () => selectCacheEntry(e.id));
+      frag.appendChild(tr);
+    });
+    cacheBody.innerHTML = '';
+    cacheBody.appendChild(frag);
+    const n = cacheEntries.length;
+    cachePill.textContent = n;
+    document.getElementById('cache-table').style.display = n === 0 ? 'none' : '';
+    document.getElementById('cache-empty').style.display = n === 0 ? 'flex'  : 'none';
+  }
+
+  function selectCacheEntry(id) {
+    selectedId = id;
+    const e = cacheEntries.find(x => x.id === id);
+    renderCache();
+    if (!e) { closeDetail(); return; }
+
+    const cc = cmdClass(e.command, e.error);
+    detailTitle.textContent = 'Cache Command';
+    detailBody.innerHTML =
+      detailRow('ID', escHtml(e.id)) +
+      detailRow('Timestamp', new Date(e.timestamp).toISOString()) +
+      detailRow('Command', `<span class="cmd-badge ${cc}">${escHtml(e.command)}</span>`) +
+      detailRow('Key', `<span class="key-cell">${escHtml(e.key)}</span>`) +
+      detailRow('Duration', `<span class="dur ${durClass(e.duration_ms)}">${e.duration_ms} ms</span>`) +
+      (e.error ? detailRow('Error', `<span class="err-cell">${escHtml(e.error)}</span>`) : '');
+
+    openDetail();
+  }
+
+  // ── data fetching ─────────────────────────────────────────────
+  async function fetchAll() {
     try {
-      const res = await fetch(API);
-      if (!res.ok) throw new Error(res.status);
-      entries = await res.json();
+      const [rHttp, rCache] = await Promise.all([
+        fetch(HTTP_API),
+        fetch(CACHE_API),
+      ]);
+      if (!rHttp.ok || !rCache.ok) throw new Error('non-200');
+      httpEntries  = await rHttp.json()  || [];
+      cacheEntries = await rCache.json() || [];
       lastFetch = Date.now();
       statusDot.classList.remove('stale');
-      renderTable();
-      if (selectedId && !entries.find(e => e.id === selectedId)) {
-        closeDetail();
-      }
-    } catch (err) {
+      renderHttp();
+      renderCache();
+      updateBadge();
+      if (selectedId && activeTab === 'http'  && !httpEntries.find(e => e.id === selectedId))  closeDetail();
+      if (selectedId && activeTab === 'cache' && !cacheEntries.find(e => e.id === selectedId)) closeDetail();
+    } catch (_) {
       if (Date.now() - lastFetch > 6000) statusDot.classList.add('stale');
     }
   }
 
   document.getElementById('clear-btn').addEventListener('click', async () => {
-    await fetch(API, { method: 'DELETE' });
-    entries = [];
+    const api = activeTab === 'http' ? HTTP_API : CACHE_API;
+    await fetch(api, { method: 'DELETE' });
+    if (activeTab === 'http')  httpEntries  = [];
+    if (activeTab === 'cache') cacheEntries = [];
     closeDetail();
-    renderTable();
+    if (activeTab === 'http')  renderHttp();
+    if (activeTab === 'cache') renderCache();
+    updateBadge();
   });
 
   document.getElementById('close-detail').addEventListener('click', closeDetail);
 
-  fetchEntries();
-  setInterval(fetchEntries, 2000);
+  fetchAll();
+  setInterval(fetchAll, 2000);
 </script>
 </body>
 </html>

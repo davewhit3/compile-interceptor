@@ -23,19 +23,18 @@ func (f RegistrarFunc) Handle(pattern string, handler http.Handler) {
 
 // Register mounts the Telescope dashboard routes onto mux:
 //
-//	GET    /telescope                 → serves the browser UI
-//	GET    /telescope/api/requests    → returns stored entries as JSON
-//	DELETE /telescope/api/requests    → clears the store
+//	GET    /telescope                  → serves the browser UI
+//	GET    /telescope/api/requests     → returns outgoing HTTP entries as JSON
+//	DELETE /telescope/api/requests     → clears the HTTP store
+//	GET    /telescope/api/cache        → returns cache command entries as JSON
+//	DELETE /telescope/api/cache        → clears the cache command store
 func Register(mux Registrar) {
 	mux.Handle("/telescope", http.HandlerFunc(handleIndex))
 	mux.Handle("/telescope/api/requests", http.HandlerFunc(handleRequests))
+	mux.Handle("/telescope/api/cache", http.HandlerFunc(handleCache))
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(indexHTML)
@@ -44,12 +43,26 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 func handleRequests(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		entries := outgoing.ListEntries()
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(entries)
+		_ = json.NewEncoder(w).Encode(outgoing.ListRequests())
 
 	case http.MethodDelete:
-		outgoing.Reset()
+		outgoing.ResetRequests()
+		w.WriteHeader(http.StatusNoContent)
+
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func handleCache(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(outgoing.ListCommands())
+
+	case http.MethodDelete:
+		outgoing.ResetCommands()
 		w.WriteHeader(http.StatusNoContent)
 
 	default:

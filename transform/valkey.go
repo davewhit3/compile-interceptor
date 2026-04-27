@@ -23,7 +23,7 @@ func init() {
 			SourceFilePattern: valkeyFilePattern,
 			TemplateCode:      templateValkeySourceCode,
 			TargetFunc:        "Do",
-			Imports:           []string{`"fmt"`},
+			InjectedPkg:       "",
 		},
 	})
 }

@@ -9,8 +9,19 @@ retry:
 	duration := time.Since(start);
 
 	cm := cmd.Commands()
-	outgoing.Add(fmt.Sprintf("%s %s %s\n", cm[0], duration, cm[1]))
-	
+	var cmdName, cmdKey string
+	if len(cm) > 0 {
+		cmdName = cm[0]
+	}
+	if len(cm) > 1 {
+		cmdKey = cm[1]
+	}
+	var errStr string
+	if respErr := resp.Error(); respErr != nil {
+		errStr = respErr.Error()
+	}
+	outgoing.AddCommand(cmdName, cmdKey, duration, errStr)
+
 	if err := resp.Error(); err != nil {
 		if err == errConnExpired {
 			goto retry
