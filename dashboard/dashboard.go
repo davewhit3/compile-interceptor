@@ -1,71 +1,124 @@
 package dashboard
 
 import (
-	_ "embed"
+	"embed"
 	"encoding/json"
+	"html/template"
+	"io/fs"
 	"net/http"
 
 	"github.com/davewhit3/compile-interceptor/outgoing"
 )
 
-//go:embed static/index.html
-var indexHTML []byte
+//go:embed templates static
+var assets embed.FS
 
-type Registrar interface {
-	Handle(pattern string, handler http.Handler)
+// pageData is passed to the HTML template on every request.
+// It lets the server inject API URLs and asset paths into the page,
+// so the dashboard works correctly regardless of where it is mounted.
+type pageData struct {
+	AssetBase string // base path for static assets, e.g. "/telescope"
+	HTTPAPI   string // full URL for the HTTP entries endpoint
+	CacheAPI  string // full URL for the cache entries endpoint
 }
 
-type RegistrarFunc func(pattern string, handler http.Handler)
+var (
+	indexTmpl  *template.Template
+	cssContent []byte
+	jsContent  []byte
+)
 
-func (f RegistrarFunc) Handle(pattern string, handler http.Handler) {
-	f(pattern, handler)
+func init() {
+	indexTmpl = template.Must(
+		template.ParseFS(assets, "templates/index.html"),
+	)
+
+	var err error
+	cssContent, err = fs.ReadFile(assets, "static/style.css")
+	if err != nil {
+		panic("telescope: missing static/style.css: " + err.Error())
+	}
+	jsContent, err = fs.ReadFile(assets, "static/app.js")
+	if err != nil {
+		panic("telescope: missing static/app.js: " + err.Error())
+	}
 }
 
-// Register mounts the Telescope dashboard routes onto mux:
+// RouteRegistrar abstracts any HTTP router so that Telescope can be mounted on
+// *http.ServeMux, gin, echo, chi, or any other framework without importing it.
 //
-//	GET    /telescope                  → serves the browser UI
-//	GET    /telescope/api/requests     → returns outgoing HTTP entries as JSON
-//	DELETE /telescope/api/requests     → clears the HTTP store
-//	GET    /telescope/api/cache        → returns cache command entries as JSON
-//	DELETE /telescope/api/cache        → clears the cache command store
-func Register(mux Registrar) {
-	mux.Handle("/telescope", http.HandlerFunc(handleIndex))
-	mux.Handle("/telescope/api/requests", http.HandlerFunc(handleRequests))
-	mux.Handle("/telescope/api/cache", http.HandlerFunc(handleCache))
+// Use ForMux for the standard library. For other routers implement the
+// interface directly, or pass a function literal:
+//
+//	// gin:
+//	dashboard.Register(func(method, path string, h http.HandlerFunc) {
+//	    router.Handle(method, path, gin.WrapH(h))
+//	})
+//
+//	// echo:
+//	dashboard.Register(func(method, path string, h http.HandlerFunc) {
+//	    e.Add(method, path, echo.WrapHandler(h))
+//	})
+//
+//	// chi:
+//	dashboard.Register(func(method, path string, h http.HandlerFunc) {
+//	    r.MethodFunc(method, path, h)
+//	})
+type RouteRegistrar func(method, path string, handler http.HandlerFunc)
+
+// ForMux adapts *http.ServeMux using Go 1.22+ method+path routing patterns.
+func ForMux(mux *http.ServeMux) RouteRegistrar {
+	return func(method, path string, h http.HandlerFunc) {
+		mux.HandleFunc(method+" "+path, h)
+	}
 }
 
-func handleIndex(w http.ResponseWriter, r *http.Request) {
+// Register mounts the Telescope dashboard routes using reg.
+func Register(reg RouteRegistrar) {
+	reg("GET", "/telescope",                 handleIndex)
+	reg("GET", "/telescope/style.css",       handleCSS)
+	reg("GET", "/telescope/app.js",          handleJS)
+	reg("GET", "/telescope/api/requests",    serveRequests)
+	reg("DELETE", "/telescope/api/requests", clearRequests)
+	reg("GET", "/telescope/api/cache",       serveCache)
+	reg("DELETE", "/telescope/api/cache",    clearCache)
+}
+
+func handleIndex(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(indexHTML)
+	_ = indexTmpl.Execute(w, pageData{
+		AssetBase: "/telescope",
+		HTTPAPI:   "/telescope/api/requests",
+		CacheAPI:  "/telescope/api/cache",
+	})
 }
 
-func handleRequests(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(outgoing.ListRequests())
-
-	case http.MethodDelete:
-		outgoing.ResetRequests()
-		w.WriteHeader(http.StatusNoContent)
-
-	default:
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-	}
+func handleCSS(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/css; charset=utf-8")
+	_, _ = w.Write(cssContent)
 }
 
-func handleCache(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(outgoing.ListCommands())
+func handleJS(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+	_, _ = w.Write(jsContent)
+}
 
-	case http.MethodDelete:
-		outgoing.ResetCommands()
-		w.WriteHeader(http.StatusNoContent)
+func serveRequests(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(outgoing.ListRequests())
+}
 
-	default:
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-	}
+func clearRequests(w http.ResponseWriter, _ *http.Request) {
+	outgoing.ResetRequests()
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func serveCache(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(outgoing.ListCommands())
+}
+
+func clearCache(w http.ResponseWriter, _ *http.Request) {
+	outgoing.ResetCommands()
+	w.WriteHeader(http.StatusNoContent)
 }

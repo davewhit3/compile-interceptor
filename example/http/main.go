@@ -34,7 +34,7 @@ func main() {
 	}()
 
 	mux := http.NewServeMux()
-	dashboard.Register(mux)
+	dashboard.Register(dashboard.ForMux(mux))
 
 	go func() {
 		fmt.Println("Starting server on :8080 — open http://localhost:8080/telescope")

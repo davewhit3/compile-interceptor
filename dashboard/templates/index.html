@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Telescope</title>
+  <link rel="stylesheet" href="{{ .AssetBase }}/style.css">
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    Telescope
+  </div>
+  <div class="header-right">
+    <span id="status-dot" title="Live"></span>
+    <span class="badge-count" id="count-badge">0</span>
+    <button class="icon-btn" id="pause-btn" title="Pause auto-refresh">
+      <svg id="icon-pause" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <rect x="5" y="4" width="4" height="16" rx="1"/><rect x="15" y="4" width="4" height="16" rx="1"/>
+      </svg>
+      <svg id="icon-play" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:none">
+        <polygon points="5,3 19,12 5,21"/>
+      </svg>
+    </button>
+    <button class="clear-btn" id="clear-btn">Clear</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="http">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+    </svg>
+    HTTP Requests
+    <span class="tab-pill" id="http-pill">0</span>
+  </button>
+  <button class="tab-btn" data-tab="cache">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="12" cy="5" rx="9" ry="3"/>
+      <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+      <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+    </svg>
+    Cache
+    <span class="tab-pill" id="cache-pill">0</span>
+  </button>
+</div>
+
+<main id="main">
+  <div class="table-panel" id="table-panel">
+
+    <div id="tab-http">
+      <table id="http-table">
+        <thead>
+          <tr><th>Time</th><th>Method</th><th>URL</th><th>Status</th><th>Duration</th></tr>
+        </thead>
+        <tbody id="http-body"></tbody>
+      </table>
+      <div class="empty-state" id="http-empty" style="display:none">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+        No outgoing HTTP requests captured yet.
+      </div>
+    </div>
+
+    <div id="tab-cache" style="display:none">
+      <table id="cache-table">
+        <thead>
+          <tr><th>Time</th><th>Command</th><th>Key</th><th>Duration</th><th>Error</th></tr>
+        </thead>
+        <tbody id="cache-body"></tbody>
+      </table>
+      <div class="empty-state" id="cache-empty" style="display:none">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="12" cy="5" rx="9" ry="3"/>
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+        </svg>
+        No cache commands captured yet.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="resize-handle hidden" id="resize-handle"></div>
+
+  <div class="detail-panel hidden" id="detail-panel">
+    <div class="detail-header">
+      <span class="detail-title" id="detail-title">Detail</span>
+      <button class="close-btn" id="close-detail">&#x2715;</button>
+    </div>
+    <div class="detail-scroll">
+      <div class="detail-body" id="detail-body"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  window.__telescope = {
+    httpAPI:  "{{ .HTTPAPI }}",
+    cacheAPI: "{{ .CacheAPI }}"
+  };
+</script>
+<script src="{{ .AssetBase }}/app.js"></script>
+
+</body>
+</html>
